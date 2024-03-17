@@ -1,3 +1,59 @@
+# much-better-wabbajack
+
+This fork of [Wabbajack](https://github.com/wabbajack-tools/wabbajack) adds the following:
+
+- A `manually-added-games` setting, to override the game locations found by Wabbajack.
+- A `hash-fallbacks` setting, to provide missing files that may be required by a Wabbajack modlist and 
+  don't necessarily match their expected hash.
+- Automatic installation of Nexus mods without Nexus Premium, credits to https://github.com/leonardovac/better-wabbajack
+
+  Disclaimer: this is against Nexus TOS, use responsibly at your own risk, see `LICENSE.txt` etc.
+
+##### manually-added-games
+Read from a JSON file at `AppData/Local/Wabbajack/saved_settings/manually-added-games.json` (or equivalent).
+
+The keys are the game names (see `Wabbajack.DTOs/Game/Game.cs`) and the values are the paths to the games.
+
+For example:
+
+```json
+{
+  "KerbalSpaceProgram": "C:\\Games\\KerbalSpaceProgram",
+  "SkyrimSpecialEdition": "C:\\Games\\Skyrim"
+}
+```
+
+##### hash-fallbacks
+
+Read from a JSON file at `AppData/Local/Wabbajack/saved_settings/hash-fallbacks.json` (or equivalent).
+
+This is a 2-dimensional dictionary: the outer keys are game names as in `manually-added-games`,
+the inner keys are base-64 encoded hashes of the files (as hashed by Wabbajack in `Wabbajack.Hashing.xxHash64`) and
+the values are the fallback file locations.
+
+The fallback file specified in `hash-fallbacks` will only be used if Wabbajack fails to find a file with the correct hash by itself.
+
+###### Usage
+
+If a Wabbajack modlist installation fails due to a "missing" game source file, note its hash in the logs:
+
+```
+00:04:41.413 [DEBUG] (Wabbajack.Installer.StandardInstaller) Missing archive with hash JbYP1w8FSfY= of size 1859 and name Skyrim.ini
+```
+
+You can then add it to `hash-fallbacks.json` as such:
+
+```json
+{
+    "SkyrimSpecialEdition": { "JbYP1w8FSfY=": "C:\\Games\\Skyrim\\Skyrim.ini" }
+}
+```
+
+**Warning**: Check the logs for `[ERROR]` entries after installing a modlist. Any errors in the format
+"Hashes for X did not match, expected Y got Z" should be as expected - if not, reinstall the modlist.
+
+---
+
 # Wabbajack
 
 [![Discord](https://img.shields.io/discord/605449136870916175)](https://discord.gg/wabbajack)
