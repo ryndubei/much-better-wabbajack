@@ -55,7 +55,10 @@ public class SettingsManager
             {
                 await using (var s = path.Open(FileMode.Open))
                 {
-                    return (await JsonSerializer.DeserializeAsync<T>(s, _dtos.Options))!;
+                    // cannot be bothered to figure out why DeserializeAsync gets stuck in BetterGameLocator,
+                    // so we deserialize synchronously now
+                    var d = JsonSerializer.Deserialize<T>(s, _dtos.Options)!;
+                    return d;
                 }
             }
         }

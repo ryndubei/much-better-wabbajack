@@ -142,19 +142,19 @@ public class GameLocator : IGameLocator
         }
     }
 
-    public AbsolutePath GameLocation(Game game)
+    public virtual AbsolutePath GameLocation(Game game)
     {
         if (TryFindLocation(game, out var path))
             return path;
         throw new Exception($"Can't find game {game}");
     }
 
-    public bool IsInstalled(Game game)
+    public virtual bool IsInstalled(Game game)
     {
         return TryFindLocation(game, out _);
     }
 
-    public bool TryFindLocation(Game game, out AbsolutePath path)
+    public virtual bool TryFindLocation(Game game, out AbsolutePath path)
     {
         lock (_locationCache)
         {

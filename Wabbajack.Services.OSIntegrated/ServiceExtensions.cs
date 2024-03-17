@@ -193,7 +193,7 @@ public static class ServiceExtensions
         if (options.UseStubbedGameFolders)
             service.AddAllSingleton<IGameLocator, StubbedGameLocator>();
         else
-            service.AddAllSingleton<IGameLocator, GameLocator>();
+            service.AddAllSingleton<IGameLocator, BetterGameLocator>();
 
         // ImageLoader
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
