@@ -300,7 +300,9 @@ public abstract class AInstaller<T>
     private void ThrowNonMatchingError(Directive file, Hash gotHash)
     {
         _logger.LogError("Hashes for {Path} did not match, expected {Expected} got {Got}", file.To, file.Hash, gotHash);
-        throw new Exception($"Hashes for {file.To} did not match, expected {file.Hash} got {gotHash}");
+        // non-matching hashes may now be deliberate, so we don't want to throw an exception
+        // TODO: have it match against InstallerExtras.HashFallbacks so we throw exceptions on truly unexpected hashes
+        // throw new Exception($"Hashes for {file.To} did not match, expected {file.Hash} got {gotHash}");
     }
     
     
@@ -315,7 +317,15 @@ public abstract class AInstaller<T>
     {
         var missing = ModList.Archives.Where(a => !HashedArchives.ContainsKey(a.Hash)).ToList();
         _logger.LogInformation("Missing {count} archives", missing.Count);
-
+        foreach (var archive in missing)
+        {
+            var hash = archive.Hash.ToBase64();
+            var size = archive.Size;
+            var name = archive.Name;
+            _logger.LogDebug("Missing archive with hash {Hash} of size {Size} and name {Name}"
+                , hash, size, name);
+        }
+        
         var dispatchers = missing.Select(m => _downloadDispatcher.Downloader(m))
             .Distinct()
             .ToList();

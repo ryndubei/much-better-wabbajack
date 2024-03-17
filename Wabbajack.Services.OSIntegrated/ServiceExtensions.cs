@@ -20,6 +20,7 @@ using Wabbajack.DTOs.Interventions;
 using Wabbajack.DTOs.JsonConverters;
 using Wabbajack.DTOs.Logins;
 using Wabbajack.Hashing.PHash;
+using Wabbajack.Hashing.xxHash64;
 using Wabbajack.Installer;
 using Wabbajack.Networking.BethesdaNet;
 using Wabbajack.Networking.Discord;
@@ -203,6 +204,12 @@ public static class ServiceExtensions
 
         // Installer/Compiler Configuration
         service.AddScoped<InstallerConfiguration>();
+        service.AddScoped<InstallerExtras>(s =>
+        {
+            var sm = s.GetRequiredService<SettingsManager>();
+            var fallbacks = LoadHashFallbacks(sm);
+            return new InstallerExtras(fallbacks);
+        });
         service.AddScoped<StandardInstaller>();
         service.AddScoped<CompilerSettings>();
         service.AddScoped<MO2Compiler>();
@@ -226,6 +233,27 @@ public static class ServiceExtensions
 
 
         return service;
+    }
+
+    private static async Task<Dictionary<Game, Dictionary<Hash, AbsolutePath>>> LoadHashFallbacks(
+        SettingsManager settingsManager)
+    {
+        var fallbacks1 = await settingsManager.Load<Dictionary<Game, Dictionary<string, AbsolutePath>>>("hash-fallbacks");
+        var fallbacks = new Dictionary<Game, Dictionary<Hash, AbsolutePath>>();
+        
+        // move everything from fallbacks1 to fallbacks, changing 'string' to 'Hash' in the process
+        foreach (var (game, d1) in fallbacks1)
+        {
+            var d = new Dictionary<Hash, AbsolutePath>();
+            foreach (var (hash1, path) in d1)
+            {
+                var hash = Hash.FromBase64(hash1);
+                d[hash] = path;
+            }
+            fallbacks[game] = d;
+        }
+        
+        return fallbacks;
     }
     
     public static MainSettings GetAppSettings(IServiceProvider provider, string name)

@@ -37,8 +37,11 @@ namespace Wabbajack.Installer;
 public class StandardInstaller : AInstaller<StandardInstaller>
 {
 
+    private readonly InstallerExtras _installerExtras;
+
     public StandardInstaller(ILogger<StandardInstaller> logger,
         InstallerConfiguration config,
+        InstallerExtras installerExtras,
         IGameLocator gameLocator, FileExtractor.FileExtractor extractor,
         DTOSerializer jsonSerializer, Context vfs, FileHashCache fileHashCache,
         DownloadDispatcher downloadDispatcher, ParallelOptions parallelOptions, IResource<IInstaller> limiter, Client wjClient, IImageLoader imageLoader) :
@@ -46,12 +49,14 @@ public class StandardInstaller : AInstaller<StandardInstaller>
             parallelOptions, limiter, wjClient, imageLoader)
     {
         MaxSteps = 14;
+        _installerExtras = installerExtras;
     }
 
     public static StandardInstaller Create(IServiceProvider provider, InstallerConfiguration configuration)
     {
         return new StandardInstaller(provider.GetRequiredService<ILogger<StandardInstaller>>(),
             configuration,
+            provider.GetRequiredService<InstallerExtras>(),
             provider.GetRequiredService<IGameLocator>(),
             provider.GetRequiredService<FileExtractor.FileExtractor>(),
             provider.GetRequiredService<DTOSerializer>(),
@@ -118,6 +123,17 @@ public class StandardInstaller : AInstaller<StandardInstaller>
         if (token.IsCancellationRequested) return false;
 
         await HashArchives(token);
+        
+        // substitute in fallback file paths if not found, not actually verifying the hashes
+        if ((await _installerExtras.HashFallbacks).TryGetValue(_configuration.Game, out var fallbacks))
+        {
+            foreach (var (hash, path) in fallbacks)
+            {
+                if (HashedArchives.TryAdd(hash, path))
+                    _logger.LogWarning("Added fallback path {Path} for hash {Hash}", path, hash);
+            }
+        }
+        
         if (token.IsCancellationRequested) return false;
 
         var missing = ModList.Archives.Where(a => !HashedArchives.ContainsKey(a.Hash)).ToList();
